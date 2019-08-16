@@ -18,57 +18,60 @@
     # echo -n d29yZHByZXNzMTIz |base64 -d
 
 # Configure a Cronjob in Kubernetes
-    apiVersion: batch/v1beta1
-    kind: CronJob
-    metadata:
-      name: mongo-database-backup
-    #  namespace: dev
-    spec:
-      schedule: "*/2 * * * *"
-      jobTemplate:
+        apiVersion: batch/v1beta1
+        kind: CronJob
+        metadata:
+          name: mongo-database-backup
+        #  namespace: dev
         spec:
-          template:
+          schedule: "*/2 * * * *"
+          jobTemplate:
             spec:
-              containers:
-              - name: mongo-database-backup
-                image: yphani/mongodb-backup-s3
-                imagePullPolicy: Always
-                env:
-                  - name: AWS_ACCESS_KEY_ID
-                    valueFrom:
-                       secretKeyRef:
-                         name: mongo-backup-secrets
-                         key: aws-access-id
-                  - name: AWS_SECRET_ACCESS_KEY
-                    valueFrom:
-                      secretKeyRef:
-                        name: mongo-backup-secrets
-                        key: aws-secret-key
-                  - name: BUCKET_REGION
-                    value: "eu-central-1"
-                  - name: BUCKET
-                    value: "mongo-backup-phani"
-                  - name: BACKUP_FOLDER
-                    value: "backup/"
-                  - name: MONGODB_HOST
-                    value: "mongodb-service"
-                  - name: MONGODB_PORT
-                    value: "27017"
-                  - name: MONGODB_DB
-                    value: "test"
-                  - name: INIT_BACKUP
-                    value: "true"
-                  - name: MONGODB_USER
-                    valueFrom:
-                      secretKeyRef:
-                        name: mongo-backup-secrets
-                        key: mongo-database-user
-                  - name: MONGODB_PASS
-                    valueFrom:
-                      secretKeyRef:
-                        name: mongo-backup-secrets
-                        key: mongo-database-password
-              restartPolicy: Never
+              template:
+                spec:
+                  containers:
+                  - name: mongo-database-backup
+                    image: yphani/mongodb-backup-s3
+                    imagePullPolicy: Always
+                    env:
+                      - name: AWS_ACCESS_KEY_ID
+                        valueFrom:
+                           secretKeyRef:
+                             name: mongo-backup-secrets
+                             key: aws-access-id
+                      - name: AWS_SECRET_ACCESS_KEY
+                        valueFrom:
+                          secretKeyRef:
+                            name: mongo-backup-secrets
+                            key: aws-secret-key
+                      - name: BUCKET_REGION
+                        value: "eu-central-1"
+                      - name: BUCKET
+                        value: "mongo-backup-phani"
+                      - name: BACKUP_FOLDER
+                        value: "backup/"
+                      - name: MONGODB_HOST
+                        value: "mongodb-service"
+                      - name: MONGODB_PORT
+                        value: "27017"
+                      - name: MONGODB_DB
+                        value: "test"
+                      - name: INIT_BACKUP
+                        value: "true"
+                      - name: EXTRA_OPTS
+                        value: '--authenticationDatabase "admin"'
+                      - name: MONGODB_USER
+                        valueFrom:
+                          secretKeyRef:
+                            name: mongo-backup-secrets
+                            key: mongo-database-user
+                      - name: MONGODB_PASS
+                        valueFrom:
+                          secretKeyRef:
+                            name: mongo-backup-secrets
+                            key: mongo-database-password
+                  restartPolicy: Never
+
 
 ## Usage in Docker:
 
