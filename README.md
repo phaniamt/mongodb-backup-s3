@@ -1,18 +1,76 @@
-# mongodb-backup-s3
+# mongodb-backup-s3-kubernetes
 
-This image runs mongodump to backup data using cronjob to an s3 bucket
+    apiVersion: v1
+    kind: Secret
+    metadata:
+      name: mongo-backup-secrets
+      labels:
+        app: mongo-backup
+    data:
+      aws-access-id: QUtJQVVKQ1dZQ1dfghbjnE9DMlZZNlk=
+      aws-secret-key: S3lzNVVkTjZpMTRoVdrftvgVGM2lGRUl5SFJYVDJiQmwxZw==
+      mongo-database-user: bWFpbl9hZG1pbg==
+      mongo-database-password: YWJjMTIz
 
-## Forked from [halvves/mongodb-backup-s3](https://github.com/halvves/mongodb-backup-s3)
+    # Encode base 64
+    # echo -n wordpress123|base64
+    # Decode base 64
+    # echo -n d29yZHByZXNzMTIz |base64 -d
 
-Added support for AWS S3 v4 authorization mechanism for those who are experiencing error:
+# Configure a Cronjob in Kubernetes
+    apiVersion: batch/v1beta1
+    kind: CronJob
+    metadata:
+      name: mongo-database-backup
+    #  namespace: dev
+    spec:
+      schedule: "*/2 * * * *"
+      jobTemplate:
+        spec:
+          template:
+            spec:
+              containers:
+              - name: mongo-database-backup
+                image: yphani/mongodb-backup-s3
+                imagePullPolicy: Always
+                env:
+                  - name: AWS_ACCESS_KEY_ID
+                    valueFrom:
+                       secretKeyRef:
+                         name: mongo-backup-secrets
+                         key: aws-access-id
+                  - name: AWS_SECRET_ACCESS_KEY
+                    valueFrom:
+                      secretKeyRef:
+                        name: mongo-backup-secrets
+                        key: aws-secret-key
+                  - name: BUCKET_REGION
+                    value: "eu-central-1"
+                  - name: BUCKET
+                    value: "mongo-backup-phani"
+                  - name: BACKUP_FOLDER
+                    value: "backup/"
+                  - name: MONGODB_HOST
+                    value: "mongodb-service"
+                  - name: MONGODB_PORT
+                    value: "27017"
+                  - name: MONGODB_DB
+                    value: "test"
+                  - name: INIT_BACKUP
+                    value: "true"
+                  - name: MONGODB_USER
+                    valueFrom:
+                      secretKeyRef:
+                        name: mongo-backup-secrets
+                        key: mongo-database-user
+                  - name: MONGODB_PASS
+                    valueFrom:
+                      secretKeyRef:
+                        name: mongo-backup-secrets
+                        key: mongo-database-password
+              restartPolicy: Never
 
-```
-A client error (InvalidRequest) occurred when calling the PutObject operation: The authorization mechanism you have provided is not supported. Please use AWS4-HMAC-SHA256.
-```
-
-Play well with this docker [nginx-letsencrypt-mongo-portainer](https://github.com/deenoize/nginx-mongo-docker) setup
-
-## Usage:
+## Usage in Docker:
 
 ```
 docker run -d \
